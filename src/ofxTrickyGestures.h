@@ -15,14 +15,14 @@
 #define TIMER_GESTURES_UPDATE 33 
 #define MINSTATS_GESTURE_REACT 0.005
 #define THERSHOLD_MINMOVEMENT_REACT 0.00001
-#define MINSTATS_GESTURE_PAN_REACT 0.5
+#define MINSTATS_GESTURE_PAN_REACT 0.13
 #define FRAMES_AVG 10
 
 class ofxTrickyGestures
 {
 public:
 
-	void setup(ofVec2f sizeItem);
+	
 	void update();//TODO set this as an automatic call to update too.
 
 	//Get the statistics of the actual gestures
@@ -31,6 +31,8 @@ public:
 	ofxSimpleTimer *_timer;
 	void timerCompelte(string &name);
 
+	void setupPan(ofVec2f locItem);
+	void setupPinch(ofVec2f sizeItem);
 	void resetPan();
 	void resetPinching();
 
@@ -44,23 +46,27 @@ public:
 		ofVec2f getOrigin() {
 			return originPan; //Check that might be 0 .. 1 ?
 		}
-		ofVec2f getRelativeLocation() { //Return the Vector to move that Loc from Origin to Loc .... 
-			return dirPan;
+		ofVec2f getRelativeLocation() { 
+			return locPan;//dirPan;
 		};
+
+		ofVec2f getPanDirection() {
+			return dirPan;
+		}
 
 		ofVec2f originPan = ofVec2f(0, 0);
 		ofVec2f locPan = ofVec2f(0, 0);
 		ofVec2f dirPan = ofVec2f(0, 0);
 
 		void reset() {
-			originPan = ofVec2f(0, 0);
+			//originPan = ofVec2f(0, 0);
 			//locPan = ofVec2f(0, 0);
 			//dirPan = ofVec2f(0, 0);
 		}
     };
 
-    ofEvent<PanEvent> panGestureEvent;
-    ofEvent<PanEvent> panGestureEndedEvent;
+   // ofEvent<PanEvent> panGestureEvent;
+   // ofEvent<PanEvent> panGestureEndedEvent;
 
     class PinchEvent{
     public:
@@ -122,24 +128,16 @@ public:
     static ofxTrickyGestures & get();
     bool isPanning() const {return m_isPanning;}
     ofVec2f getPanOrigin();
-    ofVec2f getPanDelta();
+	ofVec2f getPanDirection();
+    ofVec2f getPanRelativeLocation();
     
     bool isPinching(bool &bPinchPlus) const {
 		bPinchPlus = pinch.bPinchPlus; //value updated by ref
 		return m_isPinching;
 	}
-	
 
     ofVec2f getPinchOrigin();
 	ofVec2f getPinchScale();
-    //ofVec2f getPinchPrevious() const;
-    //ofVec2f getPinchDelta() const;
-    //ofVec2f getPinchRelativeDelta() const;
-    //double getPinchAngle() const;
-    //double getPinchRelativeAngle() const;
-    //double getPinchScale() const;
-    //double getPinchRelativeScale() const;
-
 	
 	//tricky functions//Pinch//Pan//DoubleTap?
 	float getNormDistanceTouches();
@@ -166,18 +164,9 @@ private:
 
 	bool m_isDoubleTap = false;
 	bool m_isPanning = false;
-	bool m_isPrePanning = false;
-    ofTouchEventArgs m_panOrigin;
-    ofTouchEventArgs m_panCurrent;
 
 	bool m_isPinching = false;
 	bool m_isPrePinching = false;
-    ofTouchEventArgs m_pinchOrigin1;
-    ofTouchEventArgs m_pinchOrigin2;
-    ofTouchEventArgs m_pinchPrevious1;
-    ofTouchEventArgs m_pinchPrevious2;
-    ofTouchEventArgs m_pinchCurrent1;
-    ofTouchEventArgs m_pinchCurrent2;
 
     PinchEvent pinch;
     PanEvent pan;

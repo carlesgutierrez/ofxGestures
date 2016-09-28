@@ -39,8 +39,13 @@ ofxTrickyGestures::~ofxTrickyGestures()
 }
 
 //-------------------------------------------------------------
-void ofxTrickyGestures::setup(ofVec2f sizeItem) {
+void ofxTrickyGestures::setupPinch(ofVec2f sizeItem) {
 	pinch.setup(sizeItem);
+}
+
+//-------------------------------------------------------------
+void ofxTrickyGestures::setupPan(ofVec2f locItem) {
+	pan.setup(locItem);
 }
 
 //--------------------------------------------------------------
@@ -59,11 +64,15 @@ void ofxTrickyGestures::timerCompelte(string &name)
 		//add udpate value to stats
 		if (myTouchesVector.size() > 1 && myTouchesVector.size() < 3) { //For Pinch and Pan, between 2 and 3 finguers! // TODO Check more options if 2 , 3, or more fingers.
 			
-			//Calcs bettween fingers distances
+			//Small Filtering
+			//if (abs(last_distActual - distActual) > myDiffFrameDistsStats.getLastValue() * 2) {//Testing Filter values
+				//Then do not update it
+			//}
+			//else {																				  //Calcs bettween fingers distances
 			last_distActual = last_distActual - distActual;		//Compare to the last frame //TODO compart to more than one frame?
 			myDiffFrameDistsStats.update(abs(last_distActual));			//If diference levels are changing contanstly then mean there are Pinch Actions.
 			last_distActual = distActual;						//then update last
-
+			//}
 			//Calcs bettween finguers locations ( positions )
 			myDiffFrameLocactionsStats.update(getIsAllTouchsMoving()); //Udpating between 0s and 1s. 
 
@@ -82,6 +91,7 @@ void ofxTrickyGestures::timerCompelte(string &name)
 		}
 		else {
 			myDiffFrameDistsStats.update(0);
+			myDiffFrameLocactionsStats.update(0); //Udpating between 0s and 1s. 
 			m_isPreGesture = true; //Reset to find a new gesture
 
 			//reset data gesttures
@@ -112,14 +122,17 @@ void ofxTrickyGestures::updatePanGestureRecognition() {
 		cout << " myDiffFrameLocactionsStats.getAverage(FRAMES_AVG) = " << myDiffFrameLocactionsStats.getAverage(FRAMES_AVG) << endl;
 
 		m_isPanning = true; //DETECTED pan if it's moving that finguers paralele for a some time. So we need stats paning is moving. Or diffence moving last por to new pos
-		pan.originPan = getMiddlePosTouches();
-		pan.locPan = pan.originPan;
-		pan.dirPan = (pan.locPan - pan.originPan); //TODO check between 0 and 1¿?
+		pan.originPan = pan.locPan;// locInitial;
 
 	}
 	else if (m_isPanning) { //myDiffFrameDistsStats.getAverage(FRAMES_AVG) < MINSTATS_GESTURE_REACT
-		pan.locPan = locActual;
-		pan.dirPan = (pan.locPan - pan.originPan); //TODO check between 0 and 1¿?
+		//pan.locPan = locActual;
+		pan.dirPan = (locInitial - locActual);
+		//Quick fix over this vector
+		pan.dirPan.x = 1 - pan.dirPan.x;
+		pan.dirPan.y = 1 - pan.dirPan.y;
+
+		pan.locPan = pan.originPan * pan.dirPan;
 	}
 }
 
@@ -172,8 +185,8 @@ bool ofxTrickyGestures::touchMoved(ofTouchEventArgs & touch) {
 		distInitial = getNormDistanceTouches();
 
 		locInitial = getMiddlePosTouches();
-		last_locActual = locActual = locInitial;
-
+		last_locActual = locInitial;
+		locActual = locInitial;
 	}
 	else if (myTouchesVector.size() > 1 && !m_isPreGesture) {//m_isPrePinching
 		//Update all vector values with actual teouch events
@@ -281,7 +294,12 @@ ofVec2f ofxTrickyGestures::getPanOrigin() {
 }
 
 //--------------------------------------------------
-ofVec2f ofxTrickyGestures::getPanDelta(){
+ofVec2f ofxTrickyGestures::getPanDirection() {
+	return pan.getPanDirection();
+}
+
+//--------------------------------------------------
+ofVec2f ofxTrickyGestures::getPanRelativeLocation(){
 	ofVec2f auxPanDelta;
 	auxPanDelta = pan.getRelativeLocation();
 	return auxPanDelta;
@@ -299,117 +317,5 @@ ofVec2f ofxTrickyGestures::getPinchScale()
 	return pinch.getRelativeScale();
 }
 
-/*
-ofVec2f ofxTrickyGestures::getPinchDelta() const
-{
-	ofVec2f auxDelta;
-	//auxDelta = (m_pinchCurrent2 + m_pinchCurrent1 - m_pinchOrigin2 - m_pinchOrigin1) / 2.0;
-    return auxDelta;
-}
-
-
-double ofxGestures::getPinchAngle() const
-{
-    ofVec2f currentDelta = m_pinchCurrent2 - m_pinchCurrent1;
-    ofVec2f originDelta = m_pinchOrigin2 - m_pinchOrigin1;
-    
-    double currentLength = sqrt(pow(currentDelta.x, 2) + pow(currentDelta.y, 2));
-    double originLength = sqrt(pow(originDelta.x, 2) + pow(originDelta.y, 2));
-    
-    double currentAngle = ofRadToDeg(asin(currentDelta.x / currentLength));
-    double originAngle = ofRadToDeg(asin(originDelta.x / originLength));
-    
-    if (m_pinchCurrent2.y > m_pinchCurrent1.y) currentAngle = 180.0 - currentAngle;
-    if ( m_pinchOrigin2.y >  m_pinchOrigin1.y) originAngle = 180.0 - originAngle;
-    
-    return currentAngle - originAngle;
-}
-
-double ofxGestures::getPinchScale() const
-{
-    ofVec2f currentDelta = m_pinchCurrent2 - m_pinchCurrent1;
-    ofVec2f originDelta = m_pinchOrigin2 - m_pinchOrigin1;
-    
-    double currentLength = sqrt(pow(currentDelta.x, 2) + pow(currentDelta.y, 2));
-    double originLength = sqrt(pow(originDelta.x, 2) + pow(originDelta.y, 2));
-    
-    return currentLength / originLength;
-}
-
-
-ofVec2f ofxGestures::getPinchPrevious() const{
-    return (m_pinchPrevious2 + m_pinchPrevious1) / 2.0;
-}
-
-ofVec2f ofxGestures::getPinchRelativeDelta() const{
-    return (m_pinchCurrent2 + m_pinchCurrent1 - m_pinchPrevious2 - m_pinchPrevious1) / 2.0;
-}
-
-double ofxGestures::getPinchRelativeAngle() const{
-    ofVec2f currentDelta = m_pinchCurrent2 - m_pinchCurrent1;
-    ofVec2f previousDelta = m_pinchPrevious2 - m_pinchPrevious1;
-
-    double currentLength = sqrt(pow(currentDelta.x, 2) + pow(currentDelta.y, 2));
-    double previousLength = sqrt(pow(previousDelta.x, 2) + pow(previousDelta.y, 2));
-
-    double currentAngle = ofRadToDeg(asin(currentDelta.x / currentLength));
-    double previousAngle = ofRadToDeg(asin(previousDelta.x / previousLength));
-
-    if (m_pinchCurrent2.y > m_pinchCurrent1.y) currentAngle = 180.0 - currentAngle;
-    if (m_pinchPrevious2.y >  m_pinchPrevious1.y) previousAngle = 180.0 - previousAngle;
-
-    return currentAngle - previousAngle;
-}
-
-double ofxGestures::getPinchRelativeScale() const{
-    ofVec2f currentDelta = m_pinchCurrent2 - m_pinchCurrent1;
-    ofVec2f previousDelta = m_pinchPrevious2 - m_pinchPrevious1;
-
-    double currentLength = sqrt(pow(currentDelta.x, 2) + pow(currentDelta.y, 2));
-    double previousLength = sqrt(pow(previousDelta.x, 2) + pow(previousDelta.y, 2));
-
-    return currentLength / previousLength;
-}
-
-ofVec2f ofxGestures::PinchEvent::getOrigin() const{
-	return ofxGestures::get().getPinchOrigin();
-}
-
-ofVec3f ofxGestures::PinchEvent::getPrevious() const{
-	return ofxGestures::get().getPinchPrevious();
-}
-
-ofVec2f ofxGestures::PinchEvent::getDelta() const{
-	return ofxGestures::get().getPinchDelta();
-}
-
-ofVec2f ofxGestures::PinchEvent::getRelativeDelta() const{
-	return ofxGestures::get().getPinchRelativeDelta();
-}
-
-double ofxGestures::PinchEvent::getAngle() const{
-	return ofxGestures::get().getPinchAngle();
-}
-
-double ofxGestures::PinchEvent::getScale() const{
-	return ofxGestures::get().getPinchScale();
-}
-
-double ofxGestures::PinchEvent::getRelativeAngle() const{
-	return ofxGestures::get().getPinchRelativeAngle();
-}
-
-double ofxGestures::PinchEvent::getRelativeScale() const{
-	return ofxGestures::get().getPinchRelativeScale();
-}
-
-ofVec2f ofxGestures::PanEvent::getOrigin() const{
-	return ofxGestures::get().getPanOrigin();
-}
-
-ofVec2f ofxGestures::PanEvent::getDelta() const{
-	return ofxGestures::get().getPanDelta();
-}
-*/
 
 
