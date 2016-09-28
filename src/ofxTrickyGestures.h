@@ -154,6 +154,7 @@ public:
 private:
     bool touchDown(ofTouchEventArgs & touch);
     bool touchMoved(ofTouchEventArgs & touch);
+	void updateTouchVectorData(ofTouchEventArgs & touch);
     bool touchUp(ofTouchEventArgs & touch);
 
 	void updatePanGestureRecognition();

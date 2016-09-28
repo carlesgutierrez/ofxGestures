@@ -62,9 +62,18 @@ void ofxTrickyGestures::timerCompelte(string &name)
 	if (name == "myStatsTimer")
 	{
 		//add udpate value to stats
-		if (myTouchesVector.size() > 1 && myTouchesVector.size() < 3) { //For Pinch and Pan, between 2 and 3 finguers! // TODO Check more options if 2 , 3, or more fingers.
+		if (myTouchesVector.size() == 1) {
+
+			//Calcs bettween finguers locations ( positions )
+			myDiffFrameLocactionsStats.update(getIsAllTouchsMoving()); //Udpating between 0s and 1s. 
+			if (!m_isDoubleTap && !m_isPinching) {
+				updatePanGestureRecognition();
+			}
+
+		}
+		else if (myTouchesVector.size() > 1 && myTouchesVector.size() < 3) { //For Pinch and Pan, between 2 and 3 finguers! // TODO Check more options if 2 , 3, or more fingers.
 			
-			//Small Filtering
+			//TODO Small Filtering
 			//if (abs(last_distActual - distActual) > myDiffFrameDistsStats.getLastValue() * 2) {//Testing Filter values
 				//Then do not update it
 			//}
@@ -73,12 +82,10 @@ void ofxTrickyGestures::timerCompelte(string &name)
 			myDiffFrameDistsStats.update(abs(last_distActual));			//If diference levels are changing contanstly then mean there are Pinch Actions.
 			last_distActual = distActual;						//then update last
 			//}
+
 			//Calcs bettween finguers locations ( positions )
 			myDiffFrameLocactionsStats.update(getIsAllTouchsMoving()); //Udpating between 0s and 1s. 
 
-			//PRIORITY ORDER: DOUBLE TAP / PAN / PINCH
-
-			//else if(myDiffFrameDistsStats.getAverage(FRAMES_AVG) < MINSTATS_GESTURE_REACT &&  !m_isPanning)
 
 			if (!m_isDoubleTap && !m_isPinching) {
 				updatePanGestureRecognition();
@@ -118,7 +125,7 @@ void ofxTrickyGestures::resetPinching() {
 //--------------------------------------------------------------------
 void ofxTrickyGestures::updatePanGestureRecognition() {
 	//First time Panning, then Memorize initial values to start
-	if (myDiffFrameDistsStats.getAverage(FRAMES_AVG) < MINSTATS_GESTURE_REACT && myDiffFrameLocactionsStats.getAverage(FRAMES_AVG) > MINSTATS_GESTURE_PAN_REACT && !m_isPanning) {
+	if (myDiffFrameLocactionsStats.getAverage(FRAMES_AVG) > MINSTATS_GESTURE_PAN_REACT && !m_isPanning) { //TODO Its this relevant here? myDiffFrameDistsStats.getAverage(FRAMES_AVG) < MINSTATS_GESTURE_REACT && 
 		cout << " myDiffFrameLocactionsStats.getAverage(FRAMES_AVG) = " << myDiffFrameLocactionsStats.getAverage(FRAMES_AVG) << endl;
 
 		m_isPanning = true; //DETECTED pan if it's moving that finguers paralele for a some time. So we need stats paning is moving. Or diffence moving last por to new pos
@@ -174,8 +181,22 @@ bool ofxTrickyGestures::touchMoved(ofTouchEventArgs & touch) {
 
 	//update my touch events and update related variables
 
-	//TODO PAN FOR 1 Item too
+	/////////////////////
+	//Just 1 finger
+	if (myTouchesVector.size() == 1 && m_isPreGesture) {
+		m_isPreGesture = false;
+		locInitial = getMiddlePosTouches();
+		last_locActual = locInitial;
+		locActual = locInitial;
+	}
+	else if (myTouchesVector.size() == 1 && !m_isPreGesture) {
+		updateTouchVectorData(touch);
+		last_locActual = locActual;
+		locActual = myTouchesVector[0];
+	}
 
+	/////////////////////
+	//More than 1 fingers
 	if (myTouchesVector.size() > 1 && m_isPreGesture) { //That might the moment to save a init gesture
 		m_isPreGesture = false;
 		
@@ -189,12 +210,8 @@ bool ofxTrickyGestures::touchMoved(ofTouchEventArgs & touch) {
 		locActual = locInitial;
 	}
 	else if (myTouchesVector.size() > 1 && !m_isPreGesture) {//m_isPrePinching
-		//Update all vector values with actual teouch events
-		for (int i = 0; i < myTouchesVector.size(); i++) {
-			if (myTouchesVector[i].id == touch.id) {
-				myTouchesVector[i] = touch;
-			}
-		}
+		
+		updateTouchVectorData(touch);
 
 		//tricky Data touch updates
 		distActual = getNormDistanceTouches();
@@ -205,6 +222,15 @@ bool ofxTrickyGestures::touchMoved(ofTouchEventArgs & touch) {
     return attended;
 };
 
+//-------------------------------------------------------------
+void ofxTrickyGestures::updateTouchVectorData(ofTouchEventArgs & touch) {
+	//Update all vector values with actual teouch events
+	for (int i = 0; i < myTouchesVector.size(); i++) {
+		if (myTouchesVector[i].id == touch.id) {
+			myTouchesVector[i] = touch;
+		}
+	}
+}
 
 //---------------------------------------
 ofVec2f ofxTrickyGestures::getMiddlePosTouches() {
@@ -269,7 +295,7 @@ int ofxTrickyGestures::getIsAllTouchsMoving() {
 		bMoving = 0;
 	}
 
-	//cout << "getIsAllTouchsMoving is " << bMoving << " dist_moved = " << dist_moved << endl;
+	cout << "getIsAllTouchsMoving is " << bMoving << " dist_moved = " << dist_moved << endl;
 	return bMoving;
 }
 
