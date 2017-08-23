@@ -61,7 +61,7 @@
 #
 #   Note: Leave a leading space when adding list items with the += operator
 ################################################################################
-# PROJECT_EXCLUSIONS =
+ PROJECT_EXCLUSIONS = $(PROJECT_ROOT)/../../ofxTuioWrapper/src/TUIO/unistd.h $(PROJECT_ROOT)/../../ofxTuioWrapper/src/TUIO/Doxyfile
 
 ################################################################################
 # PROJECT LINKER FLAGS

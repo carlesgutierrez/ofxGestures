@@ -8,12 +8,12 @@ void ofApp::setup(){
 	//Connect to Port
 	myTuio.connect(3333);
 	
-	myImage.load("images/caro.jpg");
+	myImage.load("images/CarolinaGiraldo.jpg"); //picture made by Carolina Giraldo --> http://festivodesign.estampable.com/
 	myImage.setAnchorPoint(myImage.getWidth()*0.5, myImage.getHeight()*0.5);
 
 	lastImageLoc = ofVec2f(ofGetWidth()*0.5, ofGetHeight()*0.5);
 
-	myTrickyGestures.setupPan(lastImageLoc); //Setup this pinch event to zoom in / out a scale Value.  Lets start at the original size
+	myTrickyGestures.setupPan(lastImageLoc, ofGetScreenWidth(), ofGetScreenHeight()); //Setup this pinch event to zoom in / out a scale Value.  Lets start at the original size
 	myTrickyGestures.setupPinch(ofVec2f(1, 1)); //Setup this pinch event to zoom in / out a scale Value.  Lets start at the original size
 
 	lastSizeItem = ofVec2f(myImage.getWidth(), myImage.getHeight());
@@ -48,7 +48,7 @@ void ofApp::draw(){
 
 	if (myTrickyGestures.isPinching(lastbPinchPlus)) {
 		ofDrawBitmapString("Initial Dist Pinch  = " + ofToString(myTrickyGestures.distInitial), 20, 20);
-		ofDrawBitmapString("Actual Distance Pinch  = " + ofToString(myTrickyGestures.distActual), 20, 40);
+		//ofDrawBitmapString("Actual Distance Pinch  = " + ofToString(myTrickyGestures.distActual), 20, 40);//TODO See why was Removed... 
 		
 		ofDrawBitmapString("Pinching point X =" + ofToString(myTrickyGestures.getPinchOrigin().x, 2) + " Y = " + ofToString(myTrickyGestures.getPinchOrigin().y, 2), 20, 80);
 		ofDrawBitmapString("Scaling by " + ofToString(lastSizeItem, 2), 20, 100);

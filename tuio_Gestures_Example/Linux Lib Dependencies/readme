@@ -1,0 +1,17 @@
+All this libraries you can install them manually by tipical linux commands such as: 
+
+ - ./configure
+ - make 
+ - make install
+
+All installed libraries will be installed by default at usr/local/bin, and shared libraries at 
+usr/local/lib. Important: For shared libraries you need to refhes them with this command: 
+
+ - "sudo /sbin/ldconfig"
+
+After all in orther to exec the right mtdev2tuio script you can use this or similar line command: 
+
+- "sudo ./mtdev2tuio /dev/input/event13 osc.udp://127.0.0.1:3333"
+
+Note: "mtdev2tuio" is an script in "mtdev2tuio-master" folder
+

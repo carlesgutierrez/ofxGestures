@@ -1,5 +1,6 @@
-ofxTuioWrapper
 ofxGestures
-ofxStatistics
+ofxGui
 ofxOsc
 ofxSimpleTimer
+ofxStatistics
+ofxTuioWrapper

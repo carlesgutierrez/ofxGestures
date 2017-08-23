@@ -11,11 +11,9 @@
 //dependencies
 #include "ofxStatistics.h"
 #include "ofxSimpleTimer.h"
+#include "ofxGui.h"
+#include "eventsGestures.h"
 
-#define TIMER_GESTURES_UPDATE 33 
-#define MINSTATS_GESTURE_REACT 0.005
-#define THERSHOLD_MINMOVEMENT_REACT 0.00001
-#define MINSTATS_GESTURE_PAN_REACT 0.13
 #define FRAMES_AVG 10
 
 class ofxTrickyGestures
@@ -28,56 +26,83 @@ public:
 	//Get the statistics of the actual gestures
 	ofxStatistics myDiffFrameDistsStats;
 	ofxStatistics myDiffFrameLocactionsStats;
+    ofxStatistics myPinchingStats;
 	ofxSimpleTimer *_timer;
 	void timerCompelte(string &name);
 
-	void setupPan(ofVec2f locItem);
+    void setupPan(ofVec2f locItem, int w, int h);
 	void setupPinch(ofVec2f sizeItem);
-	void resetPan();
-	void resetPinching();
+    void setupSingleTap(int timerSingleTap, int timerDoubleTap);
+
+    void resetPan();
+    void resetPinching();
+
+
+    class SingleTapEvent{
+    public:
+
+        void setup(int timerSingle, int timerDouble) {
+            timerWhileSingleTapActive = timerSingle;
+            timerWhileDoubleTapActive = timerDouble;
+        }
+
+        bool getIsSingleTap() {
+            return bIsSingleTap;
+        }
+
+        bool bIsSingleTap = false;
+        bool bIsDoubleTap = false;
+        int timerWhileSingleTapActive = 0;
+        int timerWhileDoubleTapActive = 0;
+        int initSingleTapTime = 0;
+        int initDoubleTapTime = 0;
+        int endTime = 0;
+
+        void reset() {
+
+        }
+    };
 
     class PanEvent{
     public:
 
-		void setup(ofVec2f posItem) {
+        void setup(ofVec2f posItem, int _w, int _h) {
 			locPan = posItem;
-			cout << "Setting locPan to " << locPan << endl;
+            w = _w;
+            h = _h;
+            ofLog() << "Setting locPan to ";
 		}
-		ofVec2f getOrigin() {
-			return originPan; //Check that might be 0 .. 1 ?
+
+        ofVec2f getOrigin() {
+            return originPan;
 		}
-		ofVec2f getRelativeLocation() { 
+
+        ofVec2f getRelativeLocation() {
 			return locPan;//dirPan;
-		};
+        }
 
 		ofVec2f getPanDirection() {
 			return dirPan;
 		}
 
-		ofVec2f originPan = ofVec2f(0, 0);
-		ofVec2f locPan = ofVec2f(0, 0);
+        ofVec2f originPan = ofVec2f(0, 0);
+        ofVec2f locPan = ofVec2f(0, 0);
 		ofVec2f dirPan = ofVec2f(0, 0);
+        int w;
+        int h;
 
-		void reset() {
-			//originPan = ofVec2f(0, 0);
-			//locPan = ofVec2f(0, 0);
-			//dirPan = ofVec2f(0, 0);
+        void reset() {
 		}
     };
-
-   // ofEvent<PanEvent> panGestureEvent;
-   // ofEvent<PanEvent> panGestureEndedEvent;
 
     class PinchEvent{
     public:
 
 		void setup(ofVec2f sizeItem) {
 			itemSize = sizeItem;
-			cout << "Seting itemSize to " << itemSize << endl; //always 1...?! TODO check if size start ok at setup size 
+            ofLog() << "Seting itemSize to " << itemSize;
 		}
 
-        //ofVec2f getDelta();  // ofVec2f getRelativeDelta() const; // double getAngle() const;  // double getScale() const; // double getRelativeAngle() const;
-     
 		//Setting generic names
 		bool isZoomIn() {
 			return bPinchPlus;
@@ -86,39 +111,41 @@ public:
 		bool isZoomOut() {
 			return bPinchPlus;
 		}
-
+        
+		//all dist values are from 0 to 1.
+		//Differences will be Minimum Stats Gesture Reactbetwen -1 and +1 
+		// 0 will mean stable pinch value
 		ofVec2f getRelativeScale() {
-			//all dist values are from 0 to 1. Differences will be betwen -1 and +1 // 0 will mean stable pinch value
+
 			float diffDist = -1*(distOrigin - distActual);
 			diffDist *= 2;
 
 			if (diffDist > 0) { //Pinch +
-				bPinchPlus = true;
+                bPinchPlus = true;
 			}
 			else if (diffDist < 0) { //Pinch -
 				bPinchPlus = false;
 			}
 			
-			itemSizeScaled = itemSize + diffDist*itemSize;
+            itemSizeScaled = itemSize + diffDist*itemSize;
 
 			return itemSizeScaled;
 		}
 
-		ofVec2f originPinch = ofVec2f(0, 0);
+        ofVec2f originPinch = ofVec2f(0, 0);
 		float distOrigin = 0;
 		float distActual = 0;
 		bool bPinchPlus = false;
+
 		//Scale value for zoom in/out
 		ofVec2f itemSizeScaled = ofVec2f(1, 1);
 		ofVec2f itemSize = ofVec2f(1, 1);
 
 		void reset() {
-			originPinch = ofVec2f(0, 0);
-			distOrigin = 0;
-			distActual = 0;
-			bPinchPlus = false;
-			//itemSizeScaled = ofVec2f(1, 1);
-			//itemSize = ofVec2f(1, 1);
+			//originPinch = ofVec2f(0, 0);
+			//distOrigin = 0;
+            //distActual = 0;
+            bPinchPlus = false;
 		}
 
 	private:
@@ -127,50 +154,70 @@ public:
     
     static ofxTrickyGestures & get();
     bool isPanning() const {return m_isPanning;}
+    bool isSingleTap() const {return m_isSingleTap;}
+    void resetSingleTap()  {m_isSingleTap = false;}
+    bool isDoubleTap() const {return m_isDoubleTap;}
+    void resetDoubleTap()  {m_isDoubleTap = false;}
+
     ofVec2f getPanOrigin();
 	ofVec2f getPanDirection();
     ofVec2f getPanRelativeLocation();
     
     bool isPinching(bool &bPinchPlus) const {
-		bPinchPlus = pinch.bPinchPlus; //value updated by ref
+        bPinchPlus = pinch.bPinchPlus; //this replay direction pinch
 		return m_isPinching;
 	}
 
     ofVec2f getPinchOrigin();
 	ofVec2f getPinchScale();
 	
-	//tricky functions//Pinch//Pan//DoubleTap?
-	float getNormDistanceTouches();
-	ofVec2f getMiddlePosTouches();
+	//Tricky functions
+	float getNormDistanceTouches();//Pinch
+    ofVec2f getMiddlePosTouches();//Pan
+    ofVec2f getFirstPosTouches();//DoubleTap
+	int getIsAllTouchsMoving();
+    int getIsPinchigMoving();
+
 	bool m_isPreGesture = true;
 	float distInitial = 0;
-	float distActual = 0, last_distActual = 0;
-	ofVec2f locInitial, locActual, last_locActual; //of the midPoint or just one finguer its fine too
-	
-	int getIsAllTouchsMoving();
+    float distPinchActual = 0, last_PinchdistActual = 0;
+    ofVec2f locPanInitial, locFingerActual, last_locFingerActual; //of the midPoint or just one finguer its fine too
 
-
+    //Gui Params for fine tunning
+    bool bGuiHide = true;
+    ofxPanel gui;
+    ofxFloatSlider scalePanTunning;
+    ofxFloatSlider scalePinchTunning;
+    ofxIntSlider timerGestureUpdate;
+    ofxFloatSlider minStatsGestureReact;
+    ofxFloatSlider thersholdMinMoveReact;
+    ofxFloatSlider minStatsGesturePanReact;
+	ofxFloatSlider thersholdMinPinchingReact;
 
 private:
-    bool touchDown(ofTouchEventArgs & touch);
-    bool touchMoved(ofTouchEventArgs & touch);
-	void updateTouchVectorData(ofTouchEventArgs & touch);
-    bool touchUp(ofTouchEventArgs & touch);
+    void touchDown(ofTouchEventArgs & touch);
+    void touchMoved(ofTouchEventArgs & touch);
+    bool updateTouchVectorData(ofTouchEventArgs & touch);
+    void touchUp(ofTouchEventArgs & touch);
 
 	void updatePanGestureRecognition();
 	void updatePinchGestureRecognition();
+	void initialResetPinchingVars();
 
-    //std::map<int, ofTouchEventArgs> m_touches;
-	vector<ofTouchEventArgs> myTouchesVector;
+    vector<ofTouchEventArgs> myTouchesVector; //updated Data of Touches
+    int last_numTouchesActive = 0;
+    ofVec2f diff_finger2locPan;
 
+    bool m_isSingleTap = false;
 	bool m_isDoubleTap = false;
 	bool m_isPanning = false;
 
 	bool m_isPinching = false;
-	bool m_isPrePinching = false;
+	bool bCasePinchOneFingerLeftKeep = false;
 
     PinchEvent pinch;
     PanEvent pan;
+    SingleTapEvent singleTap;
 
 public:
 	ofxTrickyGestures();

@@ -1,0 +1,16 @@
+	#by Carles Gutierrez at unstatic.tech
+
+	############################################################################
+	#This addon requires other addons. Check at example addons.make file
+		ofxGestures
+		ofxGui
+		ofxOsc
+		ofxSimpleTimer
+		ofxStatistics
+		ofxTuioWrapper
+
+	#Linux: **mtdev2tuio** https://github.com/olivopaolo/mtdev2tuio ( converting touch events captured from libmtdev to TUIO 1.1 ) ( needs ofxTuioWrapper )
+
+	#For Blob tracking: 
+	Any TUIO generator info.
+	############################################################################
